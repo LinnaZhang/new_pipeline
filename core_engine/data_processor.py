@@ -359,7 +359,7 @@ class DataProcessor:
                                 yoy_col = column_number_to_letter(col_num + 1)  # 获取下一列作为同比列
                                 if last_year_data[col] != 0 and last_year_data[col] is not None:
                                     # 季度同比上年率计算逻辑：该季度同比上年率=（上一年季度指标/该年季度指标）-1
-                                    current_data[yoy_col] = (last_year_data[col] / current_data[col]) - 1
+                                    current_data[yoy_col] = (current_data[col] / last_year_data[col]) - 1
                                 else:
                                     current_data[yoy_col] = None
                     
