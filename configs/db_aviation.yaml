@@ -246,3 +246,88 @@ sheets:
           yoy_diff_cols: ["AM", "AP", "AS", "AV", "BO", "BR", "BU", "BX", "DA", "DD", "DG", "DJ", "DM", "DP", "DS", "DV", "DY", "EB", "EE", "EH", "EK", "EN", "EQ", "ET", "EW", "EZ", "FC", "FF", "FI", "FL", "FO", "FR", "FU", "FX", "GA", "GD", "GG", "GJ", "GM", "GP", "GS", "GV", "GY"]
           
       - action: "aviation_clear_ax_ay_az_columns"
+
+  - sheet_name: "吉祥航空"
+    source_sheet: "吉祥航空"
+    indicators:
+      "AA000063395900": "B"
+      "AA000063396000": "E"
+      "AA000063396100": "H"
+      "AA000063396200": "K"
+      "AA000063397100": "N"
+      "AA000063397200": "Q"
+      "AA000063397300": "T"
+      "AA000063397400": "W"
+      "AA000063397900": "Z"
+      "AA000063398000": "AC"
+      "AA000063398100": "AF"
+      "AA000063398200": "AI"
+      "AA000063398700": "AL"
+      "AA000063398800": "AO"
+      "AA000063398900": "AR"
+      "AA000063399000": "AU"
+      "AA000063395500": "AX"
+      "AA000063395600": "BA"
+      "AA000063395700": "BD"
+      "AA000063395800": "BG"
+      "AA000063396700": "BJ"
+      "AA000063396800": "BM"
+      "AA000063396900": "BP"
+      "AA000063397000": "BS"
+      "AA000063396300": "BV"
+      "AA000063396400": "BY"
+      "AA000063396600": "CB"
+      "AA000063396500": "CE"
+      "AA000063397500": "CH"
+      "AA000063397600": "CK"
+      "AA000063397700": "CN"
+      "AA000063397800": "CQ"
+      "AA000063399100": "CT"
+      "AA000063399200": "CW"
+      "AA000063399400": "DA"
+      "AA000063399300": "DD"
+      "AA000063399500": "DG"
+      "AA000063399600": "DJ"
+      "AA000063399700": "DM"
+      "AA000063399800": "DP"
+      "AA000063398300": "DS"
+      "AA000063398400": "DV"
+      "AA000063398500": "DY"
+      "AA000063398600": "EC"
+      "AA000063607600": "EF"
+      
+    actions:
+      - type: "aviation_write_airline_sheet"
+        
+      - type: "aviation_apply_yoy_formulas"
+        target_cols: ["C", "F", "I", "L", "O", "R", "U", "X", "AA", "AD", "AG", "AJ", "AY", "BB", "BE", "BH", "BK", "BN", "BQ", "BT", "BW", "CA", "CD", "CG", "CJ", "CM", "CP", "CS", "CV", "CY", "DB", "DE", "DH", "DK", "DO", "DR", "DU", "DX", "EA", "ED", "EG", "EJ", "EM", "EP", "ES", "EV"]
+        start_row: 16
+          
+      - type: "aviation_apply_yoy_diff_formulas"
+        target_cols: ["AM", "AP", "AS", "AV", "BO", "BR", "BU", "BX", "DA", "DD", "DG", "DJ", "DM", "DP", "DS", "DV", "DY", "EB", "EE", "EH", "EK", "EN", "EQ", "ET", "EW", "EZ", "FC", "FF", "FI", "FL", "FO", "FR", "FU", "FX", "GA", "GD", "GG", "GJ", "GM", "GP", "GS", "GV", "GY"]
+        start_row: 16
+        
+      - type: "aviation_apply_yoy19_formulas"
+        target_cols: ["D", "G", "J", "M", "P", "S", "V", "Y", "AB", "AE", "AH", "AK", "AZ", "BC", "BF", "BI", "BL", "BO", "BR", "BU", "BX", "CA", "CD", "CG", "CJ", "CM", "CP", "CS", "CV", "CY", "DB", "DE", "DH", "DK", "DN", "DQ", "DT", "DW", "EA", "ED", "EG", "EJ", "EM", "EP", "ES", "EV", "EY"]
+        start_row: 112
+          
+      - type: "aviation_apply_diff19_formulas"
+        target_cols: ["AN", "AQ", "AT", "AW", "BP", "BS", "BV", "BZ", "DB", "DF", "DI", "DL", "DO", "DR", "DU", "DX", "EB", "EF", "EI", "EL", "EO", "ER", "EU", "EX", "FA", "FD", "FG", "FJ", "FM", "FP", "FS", "FV", "FY", "GB", "GE", "GH", "GK", "GN", "GQ", "GT", "GW", "GZ"]
+        start_row: 112
+        
+    post_processes:
+      - action: "aviation_clear_early_years_data"
+        params:
+          yoy_cols: ["C", "F", "I", "L", "O", "R", "U", "X", "AA", "AD", "AG", "AJ", "AY", "BB", "BE", "BH", "BK", "BN", "BQ", "BT", "BW", "CA", "CD", "CG", "CJ", "CM", "CP", "CS", "CV", "CY", "DB", "DE", "DH", "DK", "DO", "DR", "DU", "DX", "EA", "ED", "EG", "EJ", "EM", "EP", "ES", "EV"]
+          yoy19_cols: ["D", "G", "J", "M", "P", "S", "V", "Y", "AB", "AE", "AH", "AK", "AZ", "BC", "BF", "BI", "BL", "BO", "BR", "BU", "BX", "CA", "CD", "CG", "CJ", "CM", "CP", "CS", "CV", "CY", "DB", "DE", "DH", "DK", "DN", "DQ", "DT", "DW", "EA", "ED", "EG", "EJ", "EM", "EP", "ES", "EV", "EY"]
+          
+      - action: "aviation_adjust_format_after_full_year"
+        params:
+          yoy_cols: ["C", "F", "I", "L", "O", "R", "U", "X", "AA", "AD", "AG", "AJ", "AY", "BB", "BE", "BH", "BK", "BN", "BQ", "BT", "BW", "CA", "CD", "CG", "CJ", "CM", "CP", "CS", "CV", "CY", "DB", "DE", "DH", "DK", "DO", "DR", "DU", "DX", "EA", "ED", "EG", "EJ", "EM", "EP", "ES", "EV"]
+          yoy19_cols: ["D", "G", "J", "M", "P", "S", "V", "Y", "AB", "AE", "AH", "AK", "AZ", "BC", "BF", "BI", "BL", "BO", "BR", "BU", "BX", "CA", "CD", "CG", "CJ", "CM", "CP", "CS", "CV", "CY", "DB", "DE", "DH", "DK", "DN", "DQ", "DT", "DW", "EA", "ED", "EG", "EJ", "EM", "EP", "ES", "EV", "EY"]
+          
+      - action: "aviation_clear_ytd_2018_diff_data"
+        params:
+          yoy_diff_cols: ["AM", "AP", "AS", "AV", "BO", "BR", "BU", "BX", "DA", "DD", "DG", "DJ", "DM", "DP", "DS", "DV", "DY", "EB", "EE", "EH", "EK", "EN", "EQ", "ET", "EW", "EZ", "FC", "FF", "FI", "FL", "FO", "FR", "FU", "FX", "GA", "GD", "GG", "GJ", "GM", "GP", "GS", "GV", "GY"]
+          
+      - action: "aviation_clear_ax_ay_az_columns"
