@@ -331,3 +331,8 @@ sheets:
           yoy_diff_cols: ["AM", "AP", "AS", "AV", "BO", "BR", "BU", "BX", "DA", "DD", "DG", "DJ", "DM", "DP", "DS", "DV", "DY", "EB", "EE", "EH", "EK", "EN", "EQ", "ET", "EW", "EZ", "FC", "FF", "FI", "FL", "FO", "FR", "FU", "FX", "GA", "GD", "GG", "GJ", "GM", "GP", "GS", "GV", "GY"]
           
       - action: "aviation_clear_ax_ay_az_columns"
+
+  - sheet_name: "月度汇总表"  
+    source_sheet: "月度汇总表"  
+    actions:
+      - type: "aviation_process_monthly_summary"
