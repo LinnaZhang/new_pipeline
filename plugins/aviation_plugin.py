@@ -4,8 +4,7 @@ from openpyxl.utils import column_index_from_string as column_letter_to_number, 
 from datetime import datetime
 
 # 为了重用之前的复杂代码，直接引入旧的 DataProcessor (作为示例平滑迁移，实际可全盘重构进这里)
-from core_engine.data_processor import DataProcessor 
-from core_engine.data_reader import DataReader
+from core_engine.data_processor import DataProcessor
 
 class AviationPlugin:
     @staticmethod
@@ -549,6 +548,7 @@ class AviationPlugin:
         
         # 存储每个工作表的最新日期
         latest_dates = {}
+        latest_rows = {}
 
         for sheet_name in target_sheets_name:
             if sheet_name in sheet_names:
@@ -564,6 +564,9 @@ class AviationPlugin:
                 
                 if dates:
                     latest_date = max(dates)  # 获取最新日期
+                    # 获取最新日期的行数
+                    latest_row = next((row_idx for row_idx in range(1, ws.max_row + 1) if ws.cell(row=row_idx, column=1).value == latest_date), None)
+                    latest_rows[sheet_name] = latest_row
                     latest_dates[sheet_name] = latest_date
                     # print(f"    - 工作表 [{sheet_name}] 的最新日期: {latest_date.strftime('%Y-%m-%d')}")
                 else:
@@ -576,8 +579,8 @@ class AviationPlugin:
             ws = context['ws']
             unified_date = list(latest_dates.values())[0]  # 取第一个工作表的最新日期作为基准
             if all(date == unified_date for date in latest_dates.values()):
+                ws.cell(row=1, column=column_letter_to_number('C'), value=list(latest_rows.values())[0])# 将list(latest_rows.values())[0]写入C1
                 print(f"✅ 所有工作表的最新日期一致: {unified_date.strftime('%Y-%m-%d')}")
-
                 # 写入标题单元格
                 title = f"【申万交运】{unified_date.strftime('%Y年%m月')}航空公司数据汇总"
                 ws.cell(row=title_row, column=title_col_num, value=title)
@@ -598,5 +601,145 @@ class AviationPlugin:
         else:
             print("⚠️ 未找到任何有效的最新日期")
         
+    @staticmethod
+    def aviation_write_quarterly_report_header_info(context, params):
+        """
+        处理季度汇总表，写入标题与参数列。
+        """
+        wb = context['wb']
+        ws = context['ws']
         
+        # 获取目标工作表名称列表
+        target_sheets_name = params['target_sheets']
+        # 获取标题列与行数，参数列与参数行数
+        title_col = params['title_col']
+        title_col_num = column_letter_to_number(title_col)
+        title_row = params['title_row']
+        items_col = params['items_col']
+        items_col_num = column_letter_to_number(items_col)
+        items_rows = params.get('items_rows', [])
+        
+        # 列出目标文件中的所有工作表名称
+        sheet_names = wb.sheetnames
+        
+        # 存储每个工作表的最新季度
+        latest_quarters = {}
+        latest_rows = {}
+
+        for sheet_name in target_sheets_name:
+            if sheet_name in sheet_names:
+                ws_sheet = wb[sheet_name]
+                
+                # 遍历 A 列，获取最新季度标识
+                quarters = []
+                for row_idx in range(1, ws_sheet.max_row + 1):
+                    cell_value = ws_sheet.cell(row=row_idx, column=1).value  # A 列
+                    if cell_value and isinstance(cell_value, str) and 'Q' in cell_value:
+                        # 检查是否符合 yyQn 格式
+                        if cell_value.replace('Q', '').isdigit():
+                            quarters.append(cell_value)
+                
+                if quarters:
+                    # 获取最新的季度（假设按顺序排列，最后一个是最新的）
+                    latest_quarter = quarters[-1]
+                    # 获取最新季度的行数
+                    latest_row = next((row_idx for row_idx in range(1, ws_sheet.max_row + 1) 
+                                    if ws_sheet.cell(row=row_idx, column=1).value == latest_quarter), None)
+                    latest_rows[sheet_name] = latest_row
+                    latest_quarters[sheet_name] = latest_quarter
+                    print(f"    - 工作表 [{sheet_name}] 的最新季度: {latest_quarter}")
+                else:
+                    print(f"    - 工作表 [{sheet_name}] 的 A 列没有有效季度数据")
+            else:
+                print(f"⚠️ 跳过不存在的工作表: {sheet_name}")
+        
+        # 检查所有工作表的最新季度是否一致
+        if latest_quarters:
+            ws = context['ws']
+            unified_quarter = list(latest_quarters.values())[0]  # 取第一个工作表的最新季度作为基准
+            if all(quarter == unified_quarter for quarter in latest_quarters.values()):
+                ws.cell(row=1, column=column_letter_to_number('C'), value=list(latest_rows.values())[0])  # 将list(latest_rows.values())[0]写入C1
+                print(f"✅ 所有工作表的最新季度一致: {unified_quarter}")
+                
+                # 解析季度字符串，例如 "25Q1" -> 年份2025，季度1
+                try:
+                    year_part = unified_quarter.split('Q')[0]
+                    quarter_part = unified_quarter.split('Q')[1]
+                    
+                    # 假设是20xx年格式
+                    full_year = f"20{year_part}"
+                    
+                    # 写入标题单元格
+                    title = f"【申万交运】{full_year}年第{quarter_part}季度航空公司数据汇总"
+                    ws.cell(row=title_row, column=title_col_num, value=title)
+                    print(f"✅ 标题已写入: {title}")
+
+                    # 写入参数列
+                    # 对于 items_col_num 列，对于items_rows中的item_row，写入"当期值"，item_row+1行写入"同比yy-1Qn"，item_row+2行写入"同比2019Qn"
+                    for item_row in items_rows:
+                        ws.cell(row=item_row, column=items_col_num, value=f"当期值")
+                        
+                        # 计算去年同期季度
+                        prev_year = int(year_part) - 1
+                        yoy_quarter = f"{prev_year:02d}Q{quarter_part}"
+                        ws.cell(row=item_row+1, column=items_col_num, value=f"同比{yoy_quarter}")
+                        
+                        # 同比2019年对应季度
+                        ws.cell(row=item_row+2, column=items_col_num, value=f"同比19Q{quarter_part}")
+                    print(f"✅ 参数列已写入")
+                except Exception as e:
+                    print(f"❌ 解析季度字符串失败: {e}")
+                    raise ValueError(f"无法解析季度字符串: {unified_quarter}")
+            else:
+                print("❌ 工作表的最新季度不一致:")
+                for sheet, quarter in latest_quarters.items():
+                    print(f"    - {sheet}: {quarter}")
+                raise ValueError("工作表的最新季度不一致，请检查数据！")
+        else:
+            print("⚠️ 未找到任何有效的最新季度")
+
+    @staticmethod
+    def aviation_write_report_data(context, params):
+        wb = context['wb']
+        ws = context['ws']
+
+        target_rows = params['target_rows']  # 待写入行
+        target_sheets_name = params['target_sheets']  # 目标表
+        target_sheet_columns = params['target_sheet_columns']  # 目标表需处理列
+
+        # 目标表中需要读取的行数
+        target_sheet_row = ws.cell(row=1, column=column_letter_to_number('C')).value
+
+        for target_sheet_name in target_sheets_name:
+            # 1. 在总表第 1 行中找到目标表名对应的列
+            target_col = None
+            for col in range(1, ws.max_column + 1):
+                if ws.cell(row=1, column=col).value == target_sheet_name:
+                    target_col = col
+                    break
+
+            if target_col is None:
+                print(f"未在当前表第1行找到目标表名：{target_sheet_name}")
+                continue
+
+            # 2. 获取目标列字母
+            target_col_letter = column_number_to_letter(target_col)
+
+            # 3. 逐个写入公式
+            for i, target_row in enumerate(target_rows):
+                source_col_letter = target_sheet_columns[i].upper()
+
+                # 生成公式
+                formula = (
+                    f'=@INDIRECT("\'"&{target_col_letter}$1&"\'!'
+                    f'{source_col_letter}{target_sheet_row}")'
+                )
+
+                ws.cell(
+                    row=target_row,
+                    column=target_col
+                ).value = formula
+            # 4 清空C1
+            ws.cell(row=1, column=column_letter_to_number('C')).value = None
+
 
