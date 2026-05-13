@@ -1,9 +1,11 @@
 import pandas as pd
 import openpyxl
 from openpyxl.utils import column_index_from_string as column_letter_to_number, get_column_letter as column_number_to_letter
+from datetime import datetime
 
 # 为了重用之前的复杂代码，直接引入旧的 DataProcessor (作为示例平滑迁移，实际可全盘重构进这里)
 from core_engine.data_processor import DataProcessor 
+from core_engine.data_reader import DataReader
 
 class AviationPlugin:
     @staticmethod
@@ -500,3 +502,101 @@ class AviationPlugin:
                     # 无论原先有没有值，直接清除内容并把公式清空，防止出现 #NAME? 等错误
                     cell.value = None
         print(f"    - 完成清除季度/YTD/全年数据的AX, AY, AZ列")
+
+    @staticmethod
+    def get_latest_date_from_column_a(sheet_data):
+        """
+        从给定的 sheet 数据中筛选 A 列的日期，找到最新的日期。
+
+        Args:
+            sheet_data (pd.DataFrame): 包含 Excel 数据的 DataFrame，假设 A 列为 '日期'。
+
+        Returns:
+            tuple: (sheet_name, latest_date)，其中 latest_date 格式为 'YYYY-MM-DD'。
+        """
+        try:
+            # 确保 A 列存在并转换为日期格式
+            if 'A' in sheet_data.columns:
+                sheet_data['A'] = pd.to_datetime(sheet_data['A'], errors='coerce')
+                latest_date = sheet_data['A'].max()
+                if pd.notna(latest_date):
+                    return latest_date.strftime('%Y-%m-%d')
+            return None
+        except Exception as e:
+            print(f"Error processing sheet data: {e}")
+            return None
+        
+    @staticmethod
+    def aviation_write_monthly_report_header_info(context, params):
+        """
+        处理月度汇总表，写入标题与参数列。
+        """
+        wb = context['wb']
+        ws = context['ws']
+        
+        # 获取目标工作表名称列表
+        target_sheets_name = params['target_sheets']
+        # 获取标题列与行数，参数列与参数行数
+        title_col = params['title_col']
+        title_col_num = column_letter_to_number(title_col)
+        title_row = params['title_row']
+        items_col = params['items_col']
+        items_col_num = column_letter_to_number(items_col)
+        items_rows = params.get('items_rows', [])
+        
+        # 列出目标文件中的所有工作表名称
+        sheet_names = wb.sheetnames
+        
+        # 存储每个工作表的最新日期
+        latest_dates = {}
+
+        for sheet_name in target_sheets_name:
+            if sheet_name in sheet_names:
+                # print(f"➡️ 正在处理工作表: {sheet_name}")
+                ws = wb[sheet_name]
+                
+                # 遍历 A 列，获取最新日期
+                dates = []
+                for row_idx in range(1, ws.max_row + 1):
+                    cell_value = ws.cell(row=row_idx, column=1).value  # A 列
+                    if isinstance(cell_value, datetime):  # 确保是日期类型
+                        dates.append(cell_value)
+                
+                if dates:
+                    latest_date = max(dates)  # 获取最新日期
+                    latest_dates[sheet_name] = latest_date
+                    # print(f"    - 工作表 [{sheet_name}] 的最新日期: {latest_date.strftime('%Y-%m-%d')}")
+                else:
+                    print(f"    - 工作表 [{sheet_name}] 的 A 列没有有效日期数据")
+            else:
+                print(f"⚠️ 跳过不存在的工作表: {sheet_name}")
+        
+        # 检查所有工作表的最新日期是否一致
+        if latest_dates:
+            ws = context['ws']
+            unified_date = list(latest_dates.values())[0]  # 取第一个工作表的最新日期作为基准
+            if all(date == unified_date for date in latest_dates.values()):
+                print(f"✅ 所有工作表的最新日期一致: {unified_date.strftime('%Y-%m-%d')}")
+
+                # 写入标题单元格
+                title = f"【申万交运】{unified_date.strftime('%Y年%m月')}航空公司数据汇总"
+                ws.cell(row=title_row, column=title_col_num, value=title)
+                print(f"✅ 标题已写入: {title}")
+
+                # 写入参数列
+                # 对于 items_col_num 列，对于items_rows中的item_row，写入“当期值”，item_row+1行写入“同比yyyy-1”，item_row+2行写入“同比2019”
+                for item_row in items_rows:
+                    ws.cell(row=item_row, column=items_col_num, value=f"当期值")
+                    ws.cell(row=item_row+1, column=items_col_num, value=f"同比{unified_date.year-1}")
+                    ws.cell(row=item_row+2, column=items_col_num, value=f"同比2019")
+                print(f"✅ 参数列已写入")
+            else:
+                print("❌ 工作表的最新日期不一致:")
+                for sheet, date in latest_dates.items():
+                    print(f"    - {sheet}: {date.strftime('%Y-%m-%d')}")
+                raise ValueError("工作表的最新日期不一致，请检查数据！")
+        else:
+            print("⚠️ 未找到任何有效的最新日期")
+        
+        
+

@@ -30,6 +30,7 @@ class PipelineEngine:
             'aviation_adjust_format_after_full_year': AviationPlugin.aviation_adjust_format_after_full_year,
             'aviation_clear_ytd_2018_diff_data': AviationPlugin.aviation_clear_ytd_2018_diff_data,
             'aviation_clear_ax_ay_az_columns': AviationPlugin.aviation_clear_ax_ay_az_columns,
+            'aviation_write_monthly_report_header_info': AviationPlugin.aviation_write_monthly_report_header_info,
             # 宏观动作
             'write_indicator_group': MacroPlugin.macro_write_indicator_group,
             'create_pivot_table': MacroPlugin.macro_create_pivot_table,
