@@ -56,74 +56,157 @@ class AviationPlugin:
     @staticmethod
     def aviation_write_airline_sheet(context, params):
         """
-        处理基础指标数据写入，对齐到第一个指标日期，并生成季度和YTD统计。
+        处理基础指标数据写入，对齐到统一月份日期，并生成季度和YTD统计。
         context: 包含 wb (openpyxl Workbook), ws, data_reader
         params: 从 YAML 中解析出的该 action 的配置
         """
         ws = context['ws']
         reader = context['data_reader']
         sheet_config = context['sheet_config']
-        
+
         source_sheet = sheet_config['source_sheet']
         indicator_col_map = sheet_config['indicators']
         start_row = params.get('start_row', 4)
         start_date = params.get('start_date', '2014-01-01')
         date_format = params.get('date_format', 'yyyy-mm')
-        
+
+        start_date_ts = pd.to_datetime(start_date)
+
         # 1. 从缓存中获取所需所有指标数据
         indicator_dfs = {}
         for indicator in indicator_col_map:
             ind_data = reader.read_indicator_data(source_sheet, indicator)
-            df = ind_data["data"]
-            # 只保留start_date及以后数据
-            valid_dates = pd.to_datetime(df['日期'], errors='coerce')
-            df = df[valid_dates.notna() & (valid_dates >= start_date)].copy()
+            df = ind_data["data"].copy()
+
+            df['日期'] = pd.to_datetime(df['日期'], errors='coerce')
+
+            # 只保留 start_date 及以后数据
+            df = df[df['日期'].notna() & (df['日期'] >= start_date_ts)].copy()
             df = df.sort_values('日期', ascending=True).reset_index(drop=True)
+
             indicator_dfs[indicator] = df
 
-        # 2. 写入第一个指标的时间列和数据
+        # 2. 构造统一日期主表 base_df
+        #    逻辑：
+        #    - 以第一个指标为主指标
+        #    - 如果第一个指标最早日期晚于 start_date 所在月份，则自动补全中间缺失月份
+        #    - 补全日期使用每个月的月末日期，例如 2014-01-31、2014-02-28
         first_indicator = list(indicator_col_map.keys())[0]
         first_col = indicator_col_map[first_indicator]
-        first_df = indicator_dfs[first_indicator]
-        
-        for i, row in first_df.iterrows():
-            ws.cell(row=start_row + i, column=1, value=row['日期'])  # A列
-            ws.cell(row=start_row + i, column=column_letter_to_number(first_col), value=row[first_df.columns[-1]])
-            ws.cell(row=start_row + i, column=1).number_format = date_format
+        first_df = indicator_dfs[first_indicator].copy()
 
-        # 3. 写入其他指标数据（不写时间列）
+        if first_df.empty:
+            print(f"    - {source_sheet} 的第一个指标 {first_indicator} 无有效数据，跳过写入")
+            return
+
+        first_real_date = pd.to_datetime(first_df['日期'].iloc[0])
+
+        # start_date 对应月份的月末，例如 2014-01-01 -> 2014-01-31
+        start_month_end = start_date_ts + pd.offsets.MonthEnd(0)
+
+        # 第一个真实日期所在月份的上一个月月末
+        first_real_month_end = first_real_date + pd.offsets.MonthEnd(0)
+        fill_end = first_real_month_end - pd.offsets.MonthEnd(1)
+
+        # 如果第一个真实日期晚于起始月份，则补全 start_date 到真实日期前一个月
+        if fill_end >= start_month_end:
+            fill_dates = pd.date_range(
+                start=start_month_end,
+                end=fill_end,
+                freq='ME'
+            )
+
+            fill_df = pd.DataFrame({'日期': fill_dates})
+
+            # 补齐 first_df 的其他列，避免 concat 后列不一致
+            for col in first_df.columns:
+                if col not in fill_df.columns:
+                    fill_df[col] = None
+
+            # 保持列顺序和 first_df 一致
+            fill_df = fill_df[first_df.columns]
+
+            base_df = pd.concat([fill_df, first_df], ignore_index=True)
+        else:
+            base_df = first_df.copy()
+
+        base_df = base_df.sort_values('日期', ascending=True).reset_index(drop=True)
+
+        # 3. 写入统一日期列和第一个指标数据
+        first_value_col = first_df.columns[-1]
+        first_value_map = dict(zip(first_df['日期'], first_df[first_value_col]))
+
+        for i, row in base_df.iterrows():
+            current_row = start_row + i
+            current_date = row['日期']
+
+            # A列写日期
+            date_cell = ws.cell(row=current_row, column=1, value=current_date)
+            date_cell.number_format = date_format
+
+            # 第一个指标列写值，补全日期对应 None
+            value = first_value_map.get(current_date, None)
+            ws.cell(
+                row=current_row,
+                column=column_letter_to_number(first_col),
+                value=value
+            )
+
+        # 4. 写入其他指标数据，全部按 base_df 的日期对齐
+        base_date_list = base_df['日期'].tolist()
+
         for indicator, col in list(indicator_col_map.items())[1:]:
-            df = indicator_dfs[indicator]
-            # 对齐到第一个指标的日期
-            date_list = first_df['日期'].tolist()
-            value_map = dict(zip(df['日期'], df[df.columns[-1]]))
-            for i, date in enumerate(date_list):
-                value = value_map.get(date, None)
-                ws.cell(row=start_row + i, column=column_letter_to_number(col), value=value)
+            df = indicator_dfs[indicator].copy()
+            value_col = df.columns[-1]
 
-        # 4. 添加季度统计（从2018年开始）
-        empty_row = start_row + len(first_df)
+            value_map = dict(zip(df['日期'], df[value_col]))
+
+            for i, date in enumerate(base_date_list):
+                value = value_map.get(date, None)
+                ws.cell(
+                    row=start_row + i,
+                    column=column_letter_to_number(col),
+                    value=value
+                )
+
+        # 5. 添加季度统计标题
+        empty_row = start_row + len(base_df)
         ws.cell(row=empty_row, column=1, value=None)
-        
+
         title_row = empty_row + 1
         ws.cell(row=title_row, column=1, value="季度")
         ws.cell(row=title_row, column=1).font = openpyxl.styles.Font(bold=True)
-        
-        # 过滤2018年及以后的数据
-        valid_dates = pd.to_datetime(first_df['日期'], errors='coerce')
-        df_2018 = first_df[valid_dates.notna() & (valid_dates.dt.year >= 2018)].copy()
+
+        # 6. 构造季度统计数据源
+        #    注意：这里必须基于 base_df，而不是 first_df
+        #    否则补全出来的日期不会进入季度统计，导致季度结果错误
+        valid_dates = pd.to_datetime(base_df['日期'], errors='coerce')
+        df_2018 = base_df[valid_dates.notna() & (valid_dates.dt.year >= 2018)].copy()
         df_2018.reset_index(drop=True, inplace=True)
-        
+
         df_all_cols = pd.DataFrame({'日期': df_2018['日期']})
+        quarter_date_list = df_2018['日期'].tolist()
+
         for indicator, col in indicator_col_map.items():
-            indicator_df = indicator_dfs[indicator]
-            valid_ind_dates = pd.to_datetime(indicator_df['日期'], errors='coerce')
-            filtered_df = indicator_df[valid_ind_dates.notna() & (valid_ind_dates.dt.year >= 2018)].copy()
-            date_list = df_2018['日期'].tolist()
-            value_map = dict(zip(filtered_df['日期'], filtered_df[filtered_df.columns[-1]]))
-            df_all_cols[col] = [value_map.get(date, None) for date in date_list]
+            indicator_df = indicator_dfs[indicator].copy()
+
+            if indicator_df.empty:
+                df_all_cols[col] = [None for _ in quarter_date_list]
+                continue
+
+            indicator_df['日期'] = pd.to_datetime(indicator_df['日期'], errors='coerce')
+            indicator_df = indicator_df[indicator_df['日期'].notna()].copy()
+
+            value_col = indicator_df.columns[-1]
+            value_map = dict(zip(indicator_df['日期'], indicator_df[value_col]))
+
+            df_all_cols[col] = [
+                value_map.get(date, None)
+                for date in quarter_date_list
+            ]
 
         processor = DataProcessor(reader)
+
         quarter_title_row, quarter_results = processor.add_quarterly_stats(
             ws=ws,
             start_row=start_row,
@@ -135,37 +218,51 @@ class AviationPlugin:
         for quarter_data in quarter_results:
             if quarter_data['quarter_label']:
                 ws.cell(row=current_row, column=1, value=quarter_data['quarter_label'])
+
                 for col, value in quarter_data['data'].items():
-                    cell = ws.cell(row=current_row, column=column_letter_to_number(col), value=value)
+                    cell = ws.cell(
+                        row=current_row,
+                        column=column_letter_to_number(col),
+                        value=value
+                    )
+
                     if value is not None:
-                        original_col = ws.cell(row=start_row, column=column_letter_to_number(col))
+                        original_col = ws.cell(
+                            row=start_row,
+                            column=column_letter_to_number(col)
+                        )
                         cell.number_format = original_col.number_format
+
             current_row += 1
 
         last_quarter_row = current_row - 1
         while last_quarter_row > title_row:
-            if ws.cell(row=last_quarter_row, column=1).value and 'Q' in str(ws.cell(row=last_quarter_row, column=1).value):
+            cell_value = ws.cell(row=last_quarter_row, column=1).value
+            if cell_value and 'Q' in str(cell_value):
                 break
             last_quarter_row -= 1
 
         last_ytd_row = processor.add_ytd_stats(
             ws=ws,
             last_quarter_row=last_quarter_row,
-            data_df=df_all_cols,  
+            data_df=df_all_cols,
             value_cols=list(indicator_col_map.values())
         )
 
+        # 7. 指定列保留两位小数
         target_decimal_cols = ['AL', 'AO', 'AR', 'AU']
         for col in target_decimal_cols:
             if col in indicator_col_map.values():
                 col_num = column_letter_to_number(col)
+
                 for row in range(start_row, last_ytd_row + 1):
                     cell = ws.cell(row=row, column=col_num)
+
                     if cell.value is not None:
                         cell.number_format = '0.00'
-                        
-        print(f"    - 完成航空基础数据写入与季度统计")
 
+        print(f"    - 完成航空基础数据写入与季度统计")
+        
     @staticmethod
     def aviation_apply_yoy_formulas(context, params):
         ws = context['ws']
