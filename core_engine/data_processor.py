@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timedelta
 from core_engine.data_reader import DataReader
 import openpyxl.styles
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Font, PatternFill, Alignment
 
 
 # 配置日志
@@ -442,6 +442,8 @@ class DataProcessor:
             month_count_formula = f'={latest_month}'
             month_count_cell = ws[f'A{month_count_row}']
             month_count_cell.value = month_count_formula
+            month_count_cell.number_format = '0'
+            month_count_cell.alignment = Alignment(horizontal='left')
             # 为month_count_formula所在单元格添加高亮处理
             month_count_cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # 黄色高亮
             month_count_cell.font = Font(bold=True)  # 加粗字体
