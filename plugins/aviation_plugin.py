@@ -365,10 +365,28 @@ class AviationPlugin:
                     prev_row = row - 2
                     if prev_row >= 1:
                         formula = f"={source_col}{row}-{source_col}{prev_row}"
-                else:
+                elif "Q" in date_value:
+                    if "18" in date_value:
+                        formula = f"={source_col}{row}-AVERAGE({source_col}40:{source_col}42)"
+                    prev_row = row - 5
+                    if prev_row >= 1:
+                        formula = f"={source_col}{row}-{source_col}{prev_row}"
+                elif isinstance(date_value, datetime):
                     prev_row = row - 12
                     if prev_row >= 1:
                         formula = f"={source_col}{row}-{source_col}{prev_row}"
+                else:
+                    try:
+                        datetime.strptime(str(date_value), "%Y-%m-%d %H:%M:%S")
+
+                        prev_row = row - 12
+                        if prev_row >= 1:
+                            formula = f"={source_col}{row}-{source_col}{prev_row}"
+                        else:
+                            formula = ""
+                    except ValueError:
+                        formula = ""
+                        continue
                 if formula:
                     cell = ws.cell(row=row, column=col_num)
                     cell.value = formula
@@ -478,10 +496,10 @@ class AviationPlugin:
                         row_2019_after_full_year = r
                     else:
                         row_2019 = r
-                elif val == "2019Q1": row_2019Q1 = r
-                elif val == "2019Q2": row_2019Q2 = r
-                elif val == "2019Q3": row_2019Q3 = r
-                elif val == "2019Q4": row_2019Q4 = r
+                elif val == "19Q1": row_2019Q1 = r
+                elif val == "19Q2": row_2019Q2 = r
+                elif val == "19Q3": row_2019Q3 = r
+                elif val == "19Q4": row_2019Q4 = r
                 elif "全年" in val: full_year_row_19 = r
 
             for row in range(start_row, last_formula_row + 1):
@@ -491,12 +509,14 @@ class AviationPlugin:
                 if not date_value:
                     continue
                 
-                if "Q" in date_value and "2019" not in date_value:
-                    quarter = date_value[-1]
-                    q_row_map = {"1": row_2019Q1, "2": row_2019Q2, "3": row_2019Q3, "4": row_2019Q4}
-                    row_19_q = q_row_map.get(quarter)
-                    if row_19_q:
-                        formula = f"={source_col}{row}-{source_col}{row_19_q}"
+                if "Q" in date_value:
+                    year = date_value[:2]
+                    if year >= "23":
+                        quarter = date_value[-1]
+                        q_row_map = {"1": row_2019Q1, "2": row_2019Q2, "3": row_2019Q3, "4": row_2019Q4}
+                        row_19_q = q_row_map.get(quarter)
+                        if row_19_q:
+                            formula = f"={source_col}{row}-{source_col}{row_19_q}"
                 elif "年" in date_value:
                     year_str = "".join(filter(str.isdigit, date_value))
                     if year_str and int(year_str) >= 2023:
