@@ -354,14 +354,14 @@ sheets:
   - sheet_name: "月度汇总表"  
     actions:
       - type: "aviation_write_monthly_report_header_info"
-        target_sheets: ["中国国航" , "中国东航", "南方航空", "春秋航空", "吉祥航空"]
+        target_sheets: ["中国国航" , "中国东航", "南方航空", "春秋航空", "吉祥航空", "海航控股"]
         title_col: "B"
         title_row: 3
         items_col: "C"
         items_rows: [5, 8, 11, 14, 17, 21, 24, 27, 30, 34, 37, 40, 43, 47, 50, 53, 56]
     
       - type: "aviation_write_report_data"
-        target_sheets: ["中国国航" , "中国东航", "南方航空", "春秋航空", "吉祥航空"]
+        target_sheets: ["中国国航" , "中国东航", "南方航空", "春秋航空", "吉祥航空", "海航控股"]
         target_sheet_columns : ["b", "c", "d", "n", "o", "p", "z", "aa", "ab", "al", "am", "an", "ax", "ay", "az", "e", "f", "g", "q", "r", "s", "ac", "ad", "ae", "ao", "ap", "aq", "h", "i", "j", "t", "u", "v", "af", "ag", "ah", "ar", "as", "at", "k", "l", "m", "w", "x", "y", "ai", "aj", "ak", "au", "av", "aw"]
         target_rows : [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58]
 

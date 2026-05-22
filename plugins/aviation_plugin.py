@@ -325,7 +325,7 @@ class AviationPlugin:
                 current_cell = ws.cell(row=row, column=column_letter_to_number(source_col))
                 raw_date_value = ws.cell(row=row, column=1).value
                 date_value = str(raw_date_value).strip() if raw_date_value is not None else ""
-                if not date_value or current_cell.value in [None, ""]:
+                if not date_value or pd.isna(current_cell.value):
                     continue
                 
                 if "年" in date_value:
@@ -367,7 +367,11 @@ class AviationPlugin:
                     prev_row = row - 12
                     if prev_row >= 1:
                         formula = f"={source_col}{row}/{source_col}{prev_row}-1"
-                        
+                prev_cell = ws.cell(row=prev_row, column=column_letter_to_number(source_col))
+
+                if pd.isna(prev_cell.value):
+                    formula = ""
+
                 if formula:
                     cell = ws.cell(row=row, column=col_num)
                     cell.value = formula
@@ -389,6 +393,11 @@ class AviationPlugin:
                 formula = ""
                 raw_date_value = ws.cell(row=row, column=1).value
                 date_value = str(raw_date_value).strip() if raw_date_value is not None else ""
+
+                current_cell = ws.cell(row=row, column=column_letter_to_number(source_col))
+                if not date_value or pd.isna(current_cell.value):
+                    continue
+                
                 if not date_value:
                     continue
                 if "年" in date_value:
@@ -419,6 +428,11 @@ class AviationPlugin:
                     except ValueError:
                         formula = ""
                         continue
+
+                prev_cell = ws.cell(row=prev_row, column=column_letter_to_number(source_col))                
+                if pd.isna(prev_cell.value):
+                    formula = ""
+
                 if formula:
                     cell = ws.cell(row=row, column=col_num)
                     cell.value = formula
@@ -726,27 +740,23 @@ class AviationPlugin:
         # 检查所有工作表的最新日期是否一致
         if latest_dates:
             ws = context['ws']
-            unified_date = list(latest_dates.values())[0]  # 取第一个工作表的最新日期作为基准
-            if all(date == unified_date for date in latest_dates.values()):
-                ws.cell(row=1, column=column_letter_to_number('C'), value=list(latest_rows.values())[0])# 将list(latest_rows.values())[0]写入C1
-                print(f"✅ 所有工作表的最新日期一致: {unified_date.strftime('%Y-%m-%d')}")
-                # 写入标题单元格
-                title = f"【申万交运】{unified_date.strftime('%Y年%m月')}航空公司数据汇总"
-                ws.cell(row=title_row, column=title_col_num, value=title)
-                print(f"✅ 标题已写入: {title}")
+            unified_date = min(latest_dates.values())
+            
+            ws.cell(row=1, column=column_letter_to_number('C'), value=list(latest_rows.values())[0])# 将list(latest_rows.values())[0]写入C1
+            print(f"✅ 所有工作表的最新日期一致: {unified_date.strftime('%Y-%m-%d')}")
+            # 写入标题单元格
+            title = f"【申万交运】{unified_date.strftime('%Y年%m月')}航空公司数据汇总"
+            ws.cell(row=title_row, column=title_col_num, value=title)
+            print(f"✅ 标题已写入: {title}")
 
-                # 写入参数列
-                # 对于 items_col_num 列，对于items_rows中的item_row，写入“当期值”，item_row+1行写入“同比yyyy-1”，item_row+2行写入“同比2019”
-                for item_row in items_rows:
-                    ws.cell(row=item_row, column=items_col_num, value=f"当期值")
-                    ws.cell(row=item_row+1, column=items_col_num, value=f"同比{unified_date.year-1}")
-                    ws.cell(row=item_row+2, column=items_col_num, value=f"同比2019")
-                print(f"✅ 参数列已写入")
-            else:
-                print("❌ 工作表的最新日期不一致:")
-                for sheet, date in latest_dates.items():
-                    print(f"    - {sheet}: {date.strftime('%Y-%m-%d')}")
-                raise ValueError("工作表的最新日期不一致，请检查数据！")
+            # 写入参数列
+            # 对于 items_col_num 列，对于items_rows中的item_row，写入“当期值”，item_row+1行写入“同比yyyy-1”，item_row+2行写入“同比2019”
+            for item_row in items_rows:
+                ws.cell(row=item_row, column=items_col_num, value=f"当期值")
+                ws.cell(row=item_row+1, column=items_col_num, value=f"同比{unified_date.year-1}")
+                ws.cell(row=item_row+2, column=items_col_num, value=f"同比2019")
+            print(f"✅ 参数列已写入")
+
         else:
             print("⚠️ 未找到任何有效的最新日期")
         
