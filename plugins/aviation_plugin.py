@@ -78,6 +78,11 @@ class AviationPlugin:
             ind_data = reader.read_indicator_data(source_sheet, indicator)
             df = ind_data["data"].copy()
 
+            if df.empty or '日期' not in df.columns:
+                indicator_dfs[indicator] = pd.DataFrame(columns=['日期'])
+                print(f"    - 工作表[{source_sheet}] 未找到指标 {indicator}，该列跳过写入")
+                continue
+
             df['日期'] = pd.to_datetime(df['日期'], errors='coerce')
 
             # 只保留 start_date 及以后数据
@@ -168,6 +173,33 @@ class AviationPlugin:
                     column=column_letter_to_number(col),
                     value=value
                 )
+        # 4.1 处理国泰航空缺失值
+        # 判断当前是否为国泰航空数据
+        if source_sheet == "国泰航空":
+            print("    - 处理国泰航空缺失值")
+            for i, date in enumerate(base_date_list):
+                current_row = start_row + i
+                
+                # 获取列B (第2列) 和列E (第5列)
+                col_b_value = ws.cell(row=current_row, column=2).value
+                col_e_value = ws.cell(row=current_row, column=5).value
+                # 若列B和列E存在值，则列H = B - E
+                if col_b_value is not None and col_e_value is not None:
+                    if col_b_value is not None and col_e_value is not None:
+                        col_h_value = col_b_value - col_e_value
+                        ws.cell(row=current_row, column=8, value=col_h_value)  # 列H是第8列
+                
+                # 获取列K (第11列) 和列N (第14列)
+                col_k_value = ws.cell(row=current_row, column=11).value
+                col_n_value = ws.cell(row=current_row, column=14).value
+                
+                # 若列K和列N存在值，则列Q = K - N
+                if col_k_value is not None and col_n_value is not None:
+                    if col_k_value is not None and col_n_value is not None:
+                        col_q_value = col_k_value - col_n_value
+                        ws.cell(row=current_row, column=17, value=col_q_value)  # 列Q是第17列
+
+
 
         # 5. 添加季度统计标题
         empty_row = start_row + len(base_df)

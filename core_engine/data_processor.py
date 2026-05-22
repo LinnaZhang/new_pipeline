@@ -675,7 +675,7 @@ class DataProcessor:
                                     prev_value = yearly_totals[prev_year]['data'][col]
                                 
                                 if prev_value != 0:  # 避免除以零
-                                    yoy_value = prev_value / yearly_value - 1
+                                    yoy_value = (yearly_value - prev_value) / prev_value - 1
                                     ws[f'{yoy_col}{current_row}'] = yoy_value
                                     ws[f'{yoy_col}{current_row}'].number_format = '0.0%'
                             

@@ -1,5 +1,5 @@
 industry: "交运-航空"
-source_file: "D:/【交付审核】/_导出验收/Excel数据验收/交运/航空/交通运输新增指标未比对20250512_航空_航空月度数据_20250619090735.xlsx"
+source_file: "D:/【交付审核】/_导出验收/Excel数据验收/交运/航空/source.xlsx"
 target_file: "D:/【交付审核】/_导出验收/Excel数据验收/交运/航空/交运航空目标文档.xlsx"
 output_dir: "D:/【交付审核】/_导出验收/new_pipeline/output_files"
 
@@ -67,7 +67,7 @@ sheets:
       - action: "aviation_clear_ax_ay_az_columns"
 
   - sheet_name: "中国东航"
-    source_sheet: "东方航空"
+    source_sheet: "中国东航"
     indicators:
       "AA000058720500": "B"
       "AA000058720600": "E"
@@ -181,7 +181,7 @@ sheets:
       "AA000063394800": "AO"
       "AA000063394900": "AR"
       "AA000063395000": "AU"
-      "AA000063391100": "AX"
+      "AA000063608300": "AX"
       
     actions:
       - type: "aviation_write_airline_sheet"
@@ -211,7 +211,6 @@ sheets:
           yoy_diff_cols: ["AM", "AP", "AS", "AV"]
       - action: "aviation_clear_ax_ay_az_columns"
 
-
   - sheet_name: "吉祥航空"
     source_sheet: "吉祥航空"
     indicators:
@@ -231,7 +230,7 @@ sheets:
       "AA000063398800": "AO"
       "AA000063398900": "AR"
       "AA000063399000": "AU"
-      "AA000063395500": "AX"
+      "AA000063607600": "AX"
       
     actions:
       - type: "aviation_write_airline_sheet"
@@ -259,6 +258,97 @@ sheets:
       - action: "aviation_clear_ytd_2018_diff_data"
         params:
           yoy_diff_cols: ["AM", "AP", "AS", "AV"]
+      - action: "aviation_clear_ax_ay_az_columns"
+
+  - sheet_name: "海航控股"
+    source_sheet: "海航控股"
+    indicators:
+      "AA000058724500": "B"
+      "AA000058724200": "E"
+      "AA000058724400": "H"
+      "AA000058724300": "K"
+      "AA000063567700": "N"
+      "AA000063567900": "Q"
+      "AA000063567800": "T"
+      "AA000063567600": "W"
+      "AA000058723800": "Z"
+      "AA000058723900": "AC"
+      "AA000063567900": "AF"
+      "AA000058724000": "AI"
+      "AA000058724600": "AL"
+      "AA000063578800": "AO"
+      "AA000063579000": "AR"
+      "AA000063578900": "AU"
+      "AA000058726200": "AX"
+    actions:
+      - type: "aviation_write_airline_sheet"
+      - type: "aviation_apply_yoy_formulas"
+        target_cols: ["C", "F","I", "L", "O", "R", "U", "X", "AA", "AD", "AG", "AJ", "AY"]
+        start_row: 16
+      - type: "aviation_apply_yoy_diff_formulas"
+        target_cols: ["AM", "AP", "AS", "AV"]
+        start_row: 16
+      - type: "aviation_apply_yoy19_formulas"
+        target_cols: ["D", "G", "J", "M", "P", "S", "V", "Y", "AB", "AE", "AH", "AK", "AZ"]
+        start_row: 112
+      - type: "aviation_apply_diff19_formulas"
+        target_cols: ["AN", "AQ", "AT", "AW"]
+        start_row: 112
+    post_processes:
+      - action: "aviation_clear_early_years_data"
+        params:
+          yoy_cols: ["C", "F","I", "L", "O", "R", "U", "X", "AA", "AD", "AG", "AJ", "AY"]
+          yoy19_cols: ["D", "G", "J", "M", "P", "S", "V", "Y", "AB", "AE", "AH", "AK", "AZ"]
+      - action: "aviation_adjust_format_after_full_year"
+        params:
+          yoy_cols: ["C", "F","I", "L", "O", "R", "U", "X", "AA", "AD", "AG", "AJ", "AY"]
+          yoy19_cols: ["D", "G", "J", "M", "P", "S", "V", "Y", "AB", "AE", "AH", "AK", "AZ"]
+      - action: "aviation_clear_ytd_2018_diff_data"
+        params:
+          yoy_diff_cols: ["AM", "AP", "AS", "AV"]
+      - action: "aviation_clear_ax_ay_az_columns"
+
+  - sheet_name: "国泰航空"
+    source_sheet: "国泰航空"
+    indicators:
+      "AA000058713500": "B"
+      "AA000058713600": "E"
+      # "AA000058713700": "H" # 手动新增
+      "AA000058712500": "K"
+      "AA000058712600": "N"
+      # "AA000058712700": "Q" # 手动新增
+      "AA000058714100": "T"
+      "AA000058713200": "W"
+      "AA000058713100": "Z"
+      "AA000058713300": "AC"
+      "AA000058714000": "AF"
+      "AA000058714200": "AI"
+    actions:
+      - type: "aviation_write_airline_sheet"
+      - type: "aviation_apply_yoy_formulas"
+        target_cols: ["C", "F","I", "L", "O", "R", "U", "X", "AA", "AD"]
+        start_row: 16
+      - type: "aviation_apply_yoy_diff_formulas"
+        target_cols: ["AG", "AJ"]
+        start_row: 16
+      - type: "aviation_apply_yoy19_formulas"
+        target_cols: ["D", "G", "J", "M", "P", "S", "V", "Y", "AB", "AE"]
+        start_row: 112
+      - type: "aviation_apply_diff19_formulas"
+        target_cols: ["AH", "AK"]
+        start_row: 112
+    post_processes:
+      - action: "aviation_clear_early_years_data"
+        params:
+          yoy_cols: ["C", "F","I", "L", "O", "R", "U", "X", "AA", "AD"]
+          yoy19_cols: ["D", "G", "J", "M", "P", "S", "V", "Y", "AB", "AE"]
+      - action: "aviation_adjust_format_after_full_year"
+        params:
+          yoy_cols: ["C", "F","I", "L", "O", "R", "U", "X", "AA", "AD"]
+          yoy19_cols: ["D", "G", "J", "M", "P", "S", "V", "Y", "AB", "AE"]
+      - action: "aviation_clear_ytd_2018_diff_data"
+        params:
+          yoy_diff_cols: ["AG", "AJ"]
       - action: "aviation_clear_ax_ay_az_columns"
 
   - sheet_name: "月度汇总表"  
