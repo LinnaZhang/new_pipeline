@@ -70,7 +70,19 @@ class AviationPlugin:
         start_date = params.get('start_date', '2014-01-01')
         date_format = params.get('date_format', 'yyyy-mm')
 
+        # 获取单位转换配置，如果为 None 则设为空字典
+        unit_conversion = sheet_config.get('unit_conversion') or {}
+
         start_date_ts = pd.to_datetime(start_date)
+
+        def convert_value(column_letter, value, conversion_map):
+            """根据列和配置的倍率转换数值"""
+            if value is None or not isinstance(value, (int, float)):
+                return value
+            # 确保 conversion_map 是字典类型
+            if conversion_map and column_letter in conversion_map:
+                return value * conversion_map[column_letter]
+            return value
 
         # 1. 从缓存中获取所需所有指标数据
         indicator_dfs = {}
@@ -137,7 +149,7 @@ class AviationPlugin:
 
         base_df = base_df.sort_values('日期', ascending=True).reset_index(drop=True)
 
-        # 3. 写入统一日期列和第一个指标数据
+        # 3. 写入统一日期列和第一个指标数据（应用单位转换）
         first_value_col = first_df.columns[-1]
         first_value_map = dict(zip(first_df['日期'], first_df[first_value_col]))
 
@@ -149,15 +161,16 @@ class AviationPlugin:
             date_cell = ws.cell(row=current_row, column=1, value=current_date)
             date_cell.number_format = date_format
 
-            # 第一个指标列写值，补全日期对应 None
+            # 第一个指标列写值，应用单位转换
             value = first_value_map.get(current_date, None)
+            converted_value = convert_value(first_col, value, unit_conversion)
             ws.cell(
                 row=current_row,
                 column=column_letter_to_number(first_col),
-                value=value
+                value=converted_value
             )
 
-        # 4. 写入其他指标数据，全部按 base_df 的日期对齐
+        # 4. 写入其他指标数据，全部按 base_df 的日期对齐（应用单位转换）
         base_date_list = base_df['日期'].tolist()
 
         for indicator, col in list(indicator_col_map.items())[1:]:
@@ -168,11 +181,13 @@ class AviationPlugin:
 
             for i, date in enumerate(base_date_list):
                 value = value_map.get(date, None)
+                converted_value = convert_value(col, value, unit_conversion)
                 ws.cell(
                     row=start_row + i,
                     column=column_letter_to_number(col),
-                    value=value
+                    value=converted_value
                 )
+        
         # 4.1 处理国泰航空缺失值
         # 判断当前是否为国泰航空数据
         if source_sheet == "国泰航空":
@@ -198,8 +213,6 @@ class AviationPlugin:
                     if col_k_value is not None and col_n_value is not None:
                         col_q_value = col_k_value - col_n_value
                         ws.cell(row=current_row, column=17, value=col_q_value)  # 列Q是第17列
-
-
 
         # 5. 添加季度统计标题
         empty_row = start_row + len(base_df)
@@ -232,8 +245,9 @@ class AviationPlugin:
             value_col = indicator_df.columns[-1]
             value_map = dict(zip(indicator_df['日期'], indicator_df[value_col]))
 
+            # 季度统计时也应用单位转换
             df_all_cols[col] = [
-                value_map.get(date, None)
+                convert_value(col, value_map.get(date, None), unit_conversion)
                 for date in quarter_date_list
             ]
 
@@ -741,8 +755,9 @@ class AviationPlugin:
         if latest_dates:
             ws = context['ws']
             unified_date = min(latest_dates.values())
-            
-            ws.cell(row=1, column=column_letter_to_number('C'), value=list(latest_rows.values())[0])# 将list(latest_rows.values())[0]写入C1
+            unified_row = min(latest_rows.values())
+
+            ws.cell(row=1, column=column_letter_to_number('C'), value=unified_row)
             print(f"✅ 所有工作表的最新日期一致: {unified_date.strftime('%Y-%m-%d')}")
             # 写入标题单元格
             title = f"【申万交运】{unified_date.strftime('%Y年%m月')}航空公司数据汇总"
@@ -859,7 +874,6 @@ class AviationPlugin:
 
     @staticmethod
     def aviation_write_report_data(context, params):
-        wb = context['wb']
         ws = context['ws']
 
         target_rows = params['target_rows']  # 待写入行
