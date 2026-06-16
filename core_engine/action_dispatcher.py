@@ -7,6 +7,7 @@ from core_engine.data_reader import DataReader
 from core_engine.transformers import apply_formula
 from plugins.aviation_plugin import AviationPlugin
 from plugins.macro_plugin import MacroPlugin
+from plugins.public_plugin import PublicPlugin
 
 class PipelineEngine:
     def __init__(self, config_path):
@@ -40,6 +41,8 @@ class PipelineEngine:
             'macro_create_chuxi_pivot': MacroPlugin.macro_create_chuxi_pivot,
             'macro_create_weekly_pivot': MacroPlugin.macro_create_weekly_pivot,
             'macro_create_yearly_date_scaffold': MacroPlugin.macro_create_yearly_date_scaffold,
+            # 公共动作
+            'public_write_data': PublicPlugin.public_write_data,
         }
         
     def _create_backup(self):

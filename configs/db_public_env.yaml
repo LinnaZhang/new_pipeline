@@ -1,0 +1,30 @@
+industry: "公用事业_环保"
+source_file: "D:/【交付审核】/_导出验收/Excel数据验收/公用事业/公用事业20260615_申万公用环保周报_20260616091715.xlsx"
+target_file: "D:/【交付审核】/_导出验收/Excel数据验收/公用事业/公用事业_申万公用环保周报.xlsx"
+output_file: "D:/【交付审核】/_导出验收/new_pipeline/output_files"
+
+defaults:
+  start_date: "2014-01-01"
+  date_format: "yyyy-mm"
+
+sheets:
+  - sheet_name: "发电数据"
+    source_sheet: "发电数据"
+    indicators:
+      "AA000083518300": "B"
+      "AA000083517900": "C"
+      "AA000083517500": "D"
+      "AA000084979900": "E"
+      "AA000085576600": "F"
+      "AA000083519300": "G"
+      "AA000083518400": "H"
+      "AA000083518000": "I"
+      "AA000083517600": "J"
+      "AA000084980000": "K"
+      "AA000085576300": "L"
+      "AA000083519500": "M"
+
+    actions:
+      - type: "public_write_data"
+        start_row: 48
+        unit_conversion: 47
