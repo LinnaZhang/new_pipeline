@@ -33,3 +33,11 @@
 
 1. 如果只需使用已有能力，**完全不需要修改任何 Python 代码**，只需在对应的 `yaml` 文件中复制一份配置，修改 `sheet_name` 和 `indicators` 即可。
 2. 如果遇到了新的奇葩处理逻辑，则在 `plugins/` 下新建一个插件文件，编写处理函数，并在 YAML 的 `actions` 中通过 `type: "your_new_action"` 调用。
+
+## 5. 运行项目
+
+运行命令：
+```bash
+python run_pipeline.py
+python run_pipeline.py -c configs/db_public_env.yaml
+```

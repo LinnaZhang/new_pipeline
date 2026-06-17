@@ -63,6 +63,7 @@ class PipelineEngine:
             'macro_create_yearly_date_scaffold': MacroPlugin.macro_create_yearly_date_scaffold,
             # 公共动作
             'public_write_data': PublicPlugin.public_write_data,
+            'public_elec_write_title': PublicPlugin.public_elec_write_title,
         }
         
     def _create_backup(self):

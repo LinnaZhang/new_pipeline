@@ -26,5 +26,13 @@ sheets:
 
     actions:
       - type: "public_write_data"
-        start_row: 48
-        unit_conversion: 47
+        start_row: 51
+        unit_conversion: 50
+
+      - type: "public_elec_write_title"
+        title1_row: 13
+        title1_col: "B"
+        title2_row: 2
+        title2_col: "B"
+        latest_row: 51
+

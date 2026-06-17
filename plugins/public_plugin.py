@@ -104,4 +104,47 @@ class PublicPlugin:
                     value=converted_value
                 )
         
-        print(f"    - 完成公用事业数据写入")
+        print(f"    - 完成公用事业基础数据写入")
+    
+    @staticmethod
+    def public_elec_write_title(context, params):
+        ws = context['ws']
+
+        latest_row = params.get('latest_row')
+        latest_date = ws.cell(row=latest_row, column=1).value
+        latest_year = latest_date.year
+        latest_month = latest_date.month
+
+        def write_title(title_row, title_col, year, month):
+            if month == 2:
+                month = "1-2"
+            # 写入主标题
+            title_template = ws.cell(row=title_row, column=title_col).value
+            title = title_template.format(year=year, month=month)
+            ws.cell(row=title_row, column=title_col, value=title)
+            
+            header_row = title_row + 1
+            hearer_col = title_col + 1
+            # 写入表头日期1
+            header_template = ws.cell(row=header_row, column=hearer_col).value
+            header = header_template.format(year=year, month=month)
+            ws.cell(row=header_row, column=hearer_col, value=header)
+            # 写入表头日期2
+            header_col = hearer_col + 2
+            year = year - 1
+            header_template = ws.cell(row=header_row, column=header_col).value
+            header = header_template.format(year=year, month=month)
+            ws.cell(row=header_row, column=header_col, value=header)
+
+        title1_row = params.get('title1_row')
+        title1_col = column_letter_to_number(params.get('title1_col'))
+        write_title(title1_row, title1_col, latest_year, latest_month)
+        if latest_month == 2:
+            month2 = 12
+            year2 = latest_year - 1
+        else:
+            month2 = latest_month - 1
+            year2 = latest_year
+        title2_row = params.get('title2_row')
+        title2_col = column_letter_to_number(params.get('title2_col'))
+        write_title(title2_row, title2_col, year2, month2)
