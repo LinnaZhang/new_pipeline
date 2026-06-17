@@ -9,6 +9,26 @@ from plugins.aviation_plugin import AviationPlugin
 from plugins.macro_plugin import MacroPlugin
 from plugins.public_plugin import PublicPlugin
 
+# === Monkey-patch: 修复 openpyxl 无法读取含 ExternalData 图表的 bug ===
+# ExternalData.id 定义为 String() 但不支持命名空间属性 r:id，
+# 导致 id 解析为 None 时抛出 TypeError，图表被静默丢弃。
+# 修复: 重新创建 String 描述符，启用 allow_none 并设置 REL_NS 命名空间映射。
+# 详见: openpyxl/chart/chartspace.py 中 `id = String()  # Needs namespace`
+from openpyxl.chart.chartspace import ExternalData
+from openpyxl.descriptors.base import String
+from openpyxl.xml.constants import REL_NS
+
+_new_id = String(allow_none=True, namespace=REL_NS)
+_new_id.name = "id"  # 描述符的 name 属性必须设置，否则无法读写实例属性
+ExternalData.id = _new_id
+
+# 同步更新 __namespaced__，使 parse/serialize 时能正确处理 r:id 属性
+_ns_id = "{%s}%s" % (REL_NS, "id")
+_namespaced = [(k, ns) for k, ns in ExternalData.__namespaced__ if k != "id"]
+_namespaced.append(("id", _ns_id))
+ExternalData.__namespaced__ = tuple(_namespaced)
+# ==================================================================
+
 class PipelineEngine:
     def __init__(self, config_path):
         with open(config_path, 'r', encoding='utf-8') as f:
