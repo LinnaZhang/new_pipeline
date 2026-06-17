@@ -148,3 +148,27 @@ class PublicPlugin:
         title2_row = params.get('title2_row')
         title2_col = column_letter_to_number(params.get('title2_col'))
         write_title(title2_row, title2_col, year2, month2)
+
+    @staticmethod
+    def public_t3_write_header(context, params):
+        ws = context['ws']
+
+        def write_header(header_row, header_col, month, day):
+            header_template = ws.cell(row=header_row, column=header_col).value
+            header = header_template.format(month=month, day=day)
+            ws.cell(row=header_row, column=header_col, value=header)
+        
+        latest_row = params.get('latest_row')
+        latest_date = ws.cell(row=latest_row, column=1).value
+        latest_month = latest_date.month
+        latest_day = latest_date.day
+        header_row = params.get('header_row')
+        header1_col = column_letter_to_number(params.get('header_col'))
+        write_header(header_row, header1_col, latest_month, latest_day)
+        
+        header2_date = ws.cell(row=latest_row+1, column =1).value
+        header2_month = header2_date.month
+        header2_day = header2_date.day
+        header2_col = header1_col + 1
+        write_header(header_row, header2_col, header2_month, header2_day)
+        

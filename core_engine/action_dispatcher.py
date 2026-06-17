@@ -64,6 +64,7 @@ class PipelineEngine:
             # 公共动作
             'public_write_data': PublicPlugin.public_write_data,
             'public_elec_write_title': PublicPlugin.public_elec_write_title,
+            'public_t3_write_header': PublicPlugin.public_t3_write_header,
         }
         
     def _create_backup(self):
