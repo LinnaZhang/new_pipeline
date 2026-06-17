@@ -8,6 +8,7 @@ from core_engine.transformers import apply_formula
 from plugins.aviation_plugin import AviationPlugin
 from plugins.macro_plugin import MacroPlugin
 from plugins.public_plugin import PublicPlugin
+from plugins.bank_plugin import BankPlugin
 
 # === Monkey-patch: 修复 openpyxl 无法读取含 ExternalData 图表的 bug ===
 # ExternalData.id 定义为 String() 但不支持命名空间属性 r:id，
@@ -61,10 +62,12 @@ class PipelineEngine:
             'macro_create_chuxi_pivot': MacroPlugin.macro_create_chuxi_pivot,
             'macro_create_weekly_pivot': MacroPlugin.macro_create_weekly_pivot,
             'macro_create_yearly_date_scaffold': MacroPlugin.macro_create_yearly_date_scaffold,
-            # 公共动作
+            # 公用事业动作
             'public_write_data': PublicPlugin.public_write_data,
             'public_elec_write_title': PublicPlugin.public_elec_write_title,
             'public_t3_write_header': PublicPlugin.public_t3_write_header,
+            # 银行动作
+            'bank_write_data': BankPlugin.bank_write_data,
         }
         
     def _create_backup(self):

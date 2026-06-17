@@ -81,4 +81,4 @@ sheets:
     actions:
       - type: "public_write_data"
         start_row: 2
-        start_date: "2019-01-01"
+        start_date: "2014-01-01"
