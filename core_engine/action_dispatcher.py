@@ -68,6 +68,9 @@ class PipelineEngine:
             'public_t3_write_header': PublicPlugin.public_t3_write_header,
             # 银行动作
             'bank_write_data': BankPlugin.bank_write_data,
+
+            'bank_commercial_write_data': BankPlugin.bank_commercial_write_data,
+            'bank_commercial_formula': BankPlugin.bank_commercial_formula,
         }
         
     def _create_backup(self):
