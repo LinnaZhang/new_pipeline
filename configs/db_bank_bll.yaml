@@ -34,4 +34,8 @@ sheets:
     actions:
       - type: "bank_write_data"
         start_row: 3
-        start_date: "2013-01-01"
+        start_date: "2019-01-01"
+      - type: "bank_commercial_formula"
+        start_row: 3
+        target_formula: "="
+        format: "0.00%"
