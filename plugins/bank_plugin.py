@@ -37,7 +37,7 @@ class BankPlugin:
 
             # 只保留 start_date 及以后数据
             df = df[df['日期'].notna() & (df['日期'] >= start_date_ts)].copy()
-            df = df.sort_values('日期', ascending=False).reset_index(drop=True)
+            df = df.sort_values('日期', ascending=True).reset_index(drop=True)
 
             indicator_dfs[indicator] = df
 
