@@ -74,6 +74,9 @@ class PipelineEngine:
             'bank_commercial_formula': BankPlugin.bank_commercial_formula,
             # 医疗健康动作
             'medical_write_data': MedicalPlugin.medical_write_data,
+            'medical_write_quarter': MedicalPlugin.medical_write_quarter,
+            'medical_write_formula': MedicalPlugin.medical_write_formula,
+            'medical_merge_quarter_data': MedicalPlugin.medical_merge_quarter_data,
         }
         
     def _create_backup(self):

@@ -39,5 +39,5 @@
 运行命令：
 ```bash
 python run_pipeline.py
-python run_pipeline.py -c configs/db_bank_commercial.yaml
+python run_pipeline.py -c configs/db_medical.yaml
 ```
