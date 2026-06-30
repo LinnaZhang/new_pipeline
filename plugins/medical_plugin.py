@@ -194,13 +194,14 @@ class MedicalPlugin:
     @staticmethod
     def medical_write_formula(context, params):
         """
-        Write formulas horizontally from start_column to the last non-empty column in date_row.
+        功能说明：
+            从起始列开始，横向向右写入公式，直到日期行中最后一个非空列为止。
 
-        Supported placeholders:
-          {col}         -> current column letter (A, B, C...)
-          {col-N}       -> column letter N positions to the left
-          {row}         -> current row number
-          {source_row}  -> source data row number (from params, e.g. 4, 7, 10...)
+        支持的占位符：
+            {col}        -> 当前列字母（A、B、C...）
+            {col-N}      -> 当前列向左偏移 N 位的列字母
+            {row}        -> 当前行号
+            {source_row} -> 源数据行号（从 params 中获取，如 4、7、10...）
         """
         ws = context['ws']
         start_row = params.get('start_row')
