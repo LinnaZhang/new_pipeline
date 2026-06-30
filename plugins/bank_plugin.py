@@ -10,6 +10,21 @@ from core_engine.data_processor import DataProcessor
 class BankPlugin:
     @staticmethod
     def bank_write_data(context, params):
+        """
+        功能说明：
+            处理银行基础指标数据，写入到目标工作表中。
+            从 data_reader 缓存中读取多个指标数据，以第一个指标的日期为基准，
+            筛选出季度月份（3、6、9、12月）的数据作为基础日期表，
+            然后将所有指标数据按此日期对齐写入 Excel。
+
+        params:
+            context: dict — Pipeline 上下文，包含 ws、data_reader、sheet_config。
+            params: dict — 从 YAML action 配置中解析的参数，包含：
+                - start_row: int (默认 50) — 数据写入的起始行号。
+                - start_column: int (默认 2) — 日期列写入的起始列号。
+                - start_date: str (默认 '2021-01-01') — 数据最早日期。
+                - date_format: str (默认 'yyyy-mm') — 日期列的数字格式。
+        """        
         print(f"开始处理银行数据")
         ws = context['ws']
         reader = context['data_reader']
@@ -96,9 +111,25 @@ class BankPlugin:
 
         print(f"    - 完成银行基础数据写入")
 
-
     @staticmethod
     def bank_commercial_write_data(context, params):
+        """
+        功能说明：
+            处理银行基础指标数据，写入到目标工作表中。
+            支持多列日期写入，支持单位转换（从指定行读取转换因子）。
+            从 data_reader 缓存中读取多个指标数据，以第一个指标的日期为基准，
+            将所有指标数据按此日期对齐写入 Excel。
+
+        params:
+            context: dict — Pipeline 上下文，包含 ws、data_reader、sheet_config。
+            params: dict — 从 YAML action 配置中解析的参数，包含：
+                - start_row: int (默认 50) — 数据写入的起始行号。
+                - start_column: int (默认 1) — 日期列写入的起始列号（当 date_columns 未配置时使用）。
+                - date_columns: int | str | list[int|str] (可选) — 需要写入日期的列号或列字母列表。
+                - unit_conversion: int (默认 0) — 单位转换因子所在的行号。
+                - start_date: str (默认 '2014-01-01') — 数据最早日期。
+                - date_format: str (默认 'yyyy-mm') — 日期列的数字格式。
+        """
         ws = context['ws']
         reader = context['data_reader']
         sheet_config = context['sheet_config']
@@ -233,7 +264,11 @@ class BankPlugin:
     @staticmethod
     def bank_commercial_formula(context, params):
         """
-        通用公式写入函数，支持自定义公式模板
+        功能说明：
+            通用公式写入函数，支持自定义公式模板。
+            根据配置的公式模板，在指定的目标列中写入 Excel 公式。
+            支持 {source_column}、{row}、{row-N}、{tname} 等占位符替换，
+            并支持自定义数字格式。
         
         参数说明：
         - start_row: 起始行号
