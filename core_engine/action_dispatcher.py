@@ -10,6 +10,7 @@ from plugins.macro_plugin import MacroPlugin
 from plugins.public_plugin import PublicPlugin
 from plugins.bank_plugin import BankPlugin
 from plugins.medical_plugin import MedicalPlugin
+from plugins.electronics_plugin import ElectronicsPlugin
 
 # === Monkey-patch: 修复 openpyxl 无法读取含 ExternalData 图表的 bug ===
 # ExternalData.id 定义为 String() 但不支持命名空间属性 r:id，
@@ -77,6 +78,9 @@ class PipelineEngine:
             'medical_write_quarter': MedicalPlugin.medical_write_quarter,
             'medical_write_formula': MedicalPlugin.medical_write_formula,
             'medical_merge_quarter_data': MedicalPlugin.medical_merge_quarter_data,
+            # 电子动作
+            'electronics_write_sheet': ElectronicsPlugin.electronics_write_sheet,
+            'electronics_update_chart_ranges': ElectronicsPlugin.electronics_update_chart_ranges,
         }
         
     def _create_backup(self):
