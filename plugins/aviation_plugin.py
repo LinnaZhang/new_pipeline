@@ -3,12 +3,27 @@ import openpyxl
 from openpyxl.utils import column_index_from_string as column_letter_to_number, get_column_letter as column_number_to_letter
 from datetime import datetime
 
-# 为了重用之前的复杂代码，直接引入旧的 DataProcessor (作为示例平滑迁移，实际可全盘重构进这里)
 from core_engine.data_processor import DataProcessor
 
 class AviationPlugin:
     @staticmethod
     def _find_section_rows(ws):
+        """
+        扫描工作表的 A 列，定位"季度"、"YTD"、"全年"等关键区域的行号。
+
+        Args:
+            ws: openpyxl.Worksheet — 待扫描的工作表对象。
+
+        Returns:
+            dict:
+                - quarter_start_row: int | None — "季度"标签所在行号。
+                - ytd_row: int | None — "YTD"标签所在行号。
+                - full_year_row: int | None — "全年"标签所在行号。
+                - last_label_row: int — A 列最后一个非空文本行号。
+
+        Usage:
+            仅供 AviationPlugin 内部方法调用。
+        """
         quarter_start_row = None
         ytd_row = None
         full_year_row = None
@@ -40,6 +55,18 @@ class AviationPlugin:
 
     @staticmethod
     def _clear_columns_below_row(ws, cols_to_clear, start_row):
+        """
+        清空指定行及之后所有行中指定列的内容（将单元格值设为 None）。
+        常用于清除旧的公式或数据，防止写入新内容时残留脏数据。
+
+        Args:
+            ws: openpyxl.Worksheet — 目标工作表对象。
+            cols_to_clear: list[str] — 需要清空的列字母列表，如 ["B", "D", "H"]。
+            start_row: int — 起始行号（包含），从此行开始向下清空。
+
+        Returns:
+            None: 原地修改传入的 ws 对象。
+        """
         if not start_row or start_row > ws.max_row:
             return
 
@@ -50,15 +77,62 @@ class AviationPlugin:
 
     @staticmethod
     def _get_last_formula_row(ws):
+        """
+        获取工作表中最后一个有效标签行号，同时返回区域行信息。
+
+        封装 `_find_section_rows`，仅提取 last_label_row 和完整的区域映射，
+        供调用方判断数据边界和跳行。
+
+        Args:
+            ws: openpyxl.Worksheet — 目标工作表对象。
+
+        Returns:
+            tuple:
+                - int: 最后一个非空标签行号（last_label_row）。
+                - dict: `_find_section_rows` 的完整返回值。
+
+        Usage:
+            仅供 AviationPlugin 内部方法调用。
+        """
         section_rows = AviationPlugin._find_section_rows(ws)
         return section_rows["last_label_row"], section_rows
     
+    # ==========================================================================
+    # 基础数据写入方法
+    # ==========================================================================
+
     @staticmethod
     def aviation_write_airline_sheet(context, params):
         """
-        处理基础指标数据写入，对齐到统一月份日期，并生成季度和YTD统计。
-        context: 包含 wb (openpyxl Workbook), ws, data_reader
-        params: 从 YAML 中解析出的该 action 的配置
+        处理航空公司基础指标数据，写入到目标工作表中，并自动生成季度统计和 YTD 统计。
+
+        核心流程：
+        1. 从 data_reader 缓存中读取多个指标数据。
+        2. 以第一个指标的日期为基准，自动补全缺失月份（月末日期），生成统一日期主表。
+        3. 在 Excel 中写入日期列和各指标数据列，支持单位转换。
+        4. 生成"季度"区域的季度汇总统计。
+        5. 生成 YTD 区域的全年累计统计。
+        6. 对国泰航空数据额外处理缺失值（列H = B - E，列Q = K - N）。
+        7. 对指定列（AL, AO, AR, AU）设置两位小数格式。
+
+        Args:
+            context: dict — Pipeline 上下文，包含：
+                - ws: openpyxl.Worksheet — 目标工作表。
+                - data_reader: DataReader — 指标数据读取器。
+                - sheet_config: dict — 工作表级配置，包含：
+                    - source_sheet: str — 数据源工作表名。
+                    - indicators: dict[str, str] — 指标名到列字母的映射。
+                    - unit_conversion: dict[str, float] | None — 列字母到倍率的单位转换映射。
+            params: dict — 从 YAML action 配置中解析的参数，包含：
+                - start_row: int (默认 4) — 数据写入的起始行号。
+                - start_date: str (默认 '2014-01-01') — 数据最早日期。
+                - date_format: str (默认 'yyyy-mm') — 日期列的数字格式。
+
+        Returns:
+            None: 直接在传入的 ws 对象上原地写入数据。
+
+        Usage:
+            由 Pipeline 引擎根据 YAML 配置调用，通常作为航空公司基础数据表的第一步操作。
         """
         ws = context['ws']
         reader = context['data_reader']
@@ -311,6 +385,15 @@ class AviationPlugin:
         
     @staticmethod
     def aviation_apply_yoy_formulas(context, params):
+        """
+        功能说明：
+            计算并写入各指标的同比上年增长率公式（YoY）。
+            根据日期标签类型（年/季度/月份），计算当期值与上年同期值的增长率公式：
+        params:
+            context: dict — Pipeline 上下文，包含 ws。
+            params: dict — 参数配置，包含：
+                - target_cols: list[str] — 需要计算同比的目标列字母列表。
+                - start_row: int (默认 16) — 数据起始行号。        """
         ws = context['ws']
         target_cols = params['target_cols']
         start_row = params.get('start_row', 16)
@@ -394,6 +477,17 @@ class AviationPlugin:
 
     @staticmethod
     def aviation_apply_yoy_diff_formulas(context, params):
+        """
+        功能说明：
+            计算并写入各指标的同比上年差值公式（YoY Diff）。
+            计算当期值与上年同期值的差值.
+
+        params:
+            context: dict — Pipeline 上下文，包含 ws。
+            params: dict — 参数配置，包含：
+                - target_cols: list[str] — 需要计算同比差值的列字母列表。
+                - start_row: int (默认 16) — 数据起始行号。
+        """
         ws = context['ws']
         target_cols = params['target_cols']
         start_row = params.get('start_row', 16)
@@ -455,6 +549,16 @@ class AviationPlugin:
 
     @staticmethod
     def aviation_apply_yoy19_formulas(context, params):
+        """
+        功能说明：
+            计算并写入各指标相对于2019年同期的增长率公式（YoY vs 2019）。
+
+        params:
+            context: dict — Pipeline 上下文，包含 ws。
+            params: dict — 参数配置，包含：
+                - target_cols: list[str] — 需要计算同比2019的目标列字母列表。
+                - start_row: int (默认 112) — 数据起始行号。
+        """
         ws = context['ws']
         target_cols = params['target_cols']
         start_row = params.get('start_row', 112)
@@ -532,6 +636,16 @@ class AviationPlugin:
 
     @staticmethod
     def aviation_apply_diff19_formulas(context, params):
+        """
+        功能说明：
+            计算并写入各指标相对于2019年同期的差值公式（Diff vs 2019）。
+
+        params:
+            context: dict — Pipeline 上下文，包含 ws。
+            params: dict — 参数配置，包含：
+                - target_cols: list[str] — 需要计算差值型同比2019的目标列字母列表。
+                - start_row: int (默认 112) — 数据起始行号。
+        """        
         ws = context['ws']
         target_cols = params['target_cols']
         start_row = params.get('start_row', 112)
@@ -874,6 +988,19 @@ class AviationPlugin:
 
     @staticmethod
     def aviation_write_report_data(context, params):
+        """
+        功能说明：
+            在汇总表中写入跨表引用的公式。
+            从总表第1行查找目标表名对应的列，然后根据目标行和源列生成 INDIRECT 跨表引用公式，
+            实现从各子表自动汇总数据到总表的功能。
+
+        params:
+            context: dict — Pipeline 上下文，包含 ws。
+            params: dict — 参数配置，包含：
+                - target_rows: list[int] — 汇总表中待写入的行号列表。
+                - target_sheets: list[str] — 目标子表名称列表。
+                - target_sheet_columns: list[str] — 目标子表中需要读取的列字母列表。
+        """        
         ws = context['ws']
 
         target_rows = params['target_rows']  # 待写入行
