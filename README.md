@@ -39,5 +39,8 @@
 运行命令：
 ```bash
 python run_pipeline.py
+```
+单个执行文件运行命令：
+```bash
 python run_pipeline.py -c configs/db_medical.yaml
 ```
