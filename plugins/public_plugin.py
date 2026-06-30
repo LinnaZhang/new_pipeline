@@ -1,14 +1,28 @@
 import pandas as pd
-import openpyxl
 from openpyxl.utils import column_index_from_string as column_letter_to_number, get_column_letter as column_number_to_letter
 from datetime import datetime
 
-# 为了重用之前的复杂代码，直接引入旧的 DataProcessor (作为示例平滑迁移，实际可全盘重构进这里)
 from core_engine.data_processor import DataProcessor
 
 class PublicPlugin:
     @staticmethod
     def public_write_data(context, params):
+        """
+        功能说明：
+            处理公用事业基础指标数据，写入到目标工作表中。
+            从 data_reader 缓存中读取多个指标数据，以第一个指标的日期为基准，
+            将所有指标数据按此日期对齐写入 Excel。
+            支持单位转换（从指定行读取转换因子），日期按降序排列（最新日期在前）。
+
+        params:
+            context: dict — Pipeline 上下文，包含 ws、data_reader、sheet_config。
+            params: dict — 从 YAML action 配置中解析的参数，包含：
+                - start_row: int (默认 50) — 数据写入的起始行号。
+                - start_column: int (默认 1) — 日期列写入的起始列号。
+                - unit_conversion: int (默认 0) — 单位转换因子所在的行号。
+                - start_date: str (默认 '2014-01-01') — 数据最早日期。
+                - date_format: str (默认 'yyyy-mm') — 日期列的数字格式。
+        """ 
         ws = context['ws']
         reader = context['data_reader']
         sheet_config = context['sheet_config']
@@ -108,6 +122,22 @@ class PublicPlugin:
     
     @staticmethod
     def public_elec_write_title(context, params):
+        """
+        功能说明：
+            写入公用事业（电力）报表的动态标题和表头日期。
+            根据最新日期（latest_row 行 A 列的值）自动计算并格式化标题，
+            支持主标题和副标题两行，分别使用当前月份和上月（或上一年12月）的数据。
+            特殊处理 2 月份：标题显示为 "1-2" 表示 1-2 月合并数据。
+
+        params:
+            context: dict — Pipeline 上下文，包含 ws。
+            params: dict — 参数配置，包含：
+                - latest_row: int — 最新数据所在行号，用于获取最新日期。
+                - title1_row: int — 主标题所在行号。
+                - title1_col: str — 主标题所在列字母。
+                - title2_row: int — 副标题所在行号（用于上月/上期数据）。
+                - title2_col: str — 副标题所在列字母。
+        """
         ws = context['ws']
 
         latest_row = params.get('latest_row')
@@ -151,6 +181,19 @@ class PublicPlugin:
 
     @staticmethod
     def public_t3_write_header(context, params):
+        """
+        功能说明：
+            写入 T+3（三日滚动）报表的表头日期。
+            根据最新日期（latest_row 行 A 列的值）和其下一行日期，
+            分别写入两个表头单元格的日期（月/日格式）。
+
+        params:
+            context: dict — Pipeline 上下文，包含 ws。
+            params: dict — 参数配置，包含：
+                - latest_row: int — 最新数据所在行号，用于获取最新日期。
+                - header_row: int — 表头所在行号。
+               
+        """        
         ws = context['ws']
 
         def write_header(header_row, header_col, month, day):
