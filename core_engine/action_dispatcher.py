@@ -11,6 +11,7 @@ from plugins.public_plugin import PublicPlugin
 from plugins.bank_plugin import BankPlugin
 from plugins.medical_plugin import MedicalPlugin
 from plugins.electronics_plugin import ElectronicsPlugin
+from plugins.baijiu_plugin import BaijiuPlugin
 
 # === Monkey-patch: 修复 openpyxl 无法读取含 ExternalData 图表的 bug ===
 # ExternalData.id 定义为 String() 但不支持命名空间属性 r:id，
@@ -81,6 +82,12 @@ class PipelineEngine:
             # 电子动作
             'electronics_write_sheet': ElectronicsPlugin.electronics_write_sheet,
             'electronics_update_chart_ranges': ElectronicsPlugin.electronics_update_chart_ranges,
+            # 白酒动作
+            'baijiu_write_sheet': BaijiuPlugin.baijiu_write_sheet,
+            'baijiu_write_sheet_by_code': BaijiuPlugin.baijiu_write_sheet_by_code,
+            'baijiu_fill_summary_rows': BaijiuPlugin.baijiu_fill_summary_rows,
+            'baijiu_fill_zuotu': BaijiuPlugin.baijiu_fill_zuotu,
+            'baijiu_finalize_charts': BaijiuPlugin.baijiu_finalize_charts,
         }
         
     def _create_backup(self):
